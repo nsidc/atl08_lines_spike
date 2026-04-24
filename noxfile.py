@@ -39,7 +39,7 @@ def pylint(session: nox.Session) -> None:
     # This needs to be installed into the package environment, and is slower
     # than a pre-commit check
     session.install("-e.", "pylint>=3.2")
-    session.run("pylint", "alt08_lines", *session.posargs)
+    session.run("pylint", "atl08_lines", *session.posargs)
 
 
 @nox.session

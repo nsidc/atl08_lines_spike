@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 
 [project]
-name = "alt08_lines"
+name = "atl08_lines"
 version = "0.1.0"
 authors = [
   { name = "Trey Stafford", email = "trey.stafford@colorado.edu" },
@@ -70,10 +70,11 @@ log_level = "INFO"
 testpaths = [
   "tests",
 ]
+pythonpath = ["src"]
 
 
 [tool.coverage]
-run.source = ["alt08_lines"]
+run.source = ["atl08_lines"]
 report.exclude_also = [
   '\.\.\.',
   'if typing.TYPE_CHECKING:',
@@ -90,7 +91,7 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
-module = "alt08_lines.*"
+module = "atl08_lines.*"
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 
@@ -142,7 +143,7 @@ ignore = [
   "PLR2004",  # Magic value used in comparison
 ]
 # Uncomment if using a _compat.typing backport
-# typing-modules = ["alt08_lines._compat.typing"]
+# typing-modules = ["atl08_lines._compat.typing"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]

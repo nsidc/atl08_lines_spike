@@ -40,7 +40,7 @@ if __name__ == "__main__":
     """Manual test case assuming a `data` dir in the project root with
     `ATL08_20260118035703_05313006_007_01.h5" present. To run:
 
-    uv run python src/alt08_lines/read_geom.py
+    uv run python src/atl08_lines/read_geom.py
     """
     this_dir = Path(__file__).parent
 
