@@ -91,9 +91,19 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
-module = "atl08_lines.*"
+module = [
+  "atl08_lines.*",
+]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+  "geopandas.*",
+  "shapely.*",
+  "xarray.*",
+]
+ignore_missing_imports = true
 
 
 [tool.ruff]
@@ -141,6 +151,7 @@ extend-select = [
 ignore = [
   "PLR09",    # Too many <...>
   "PLR2004",  # Magic value used in comparison
+  "RET504",
 ]
 # Uncomment if using a _compat.typing backport
 # typing-modules = ["atl08_lines._compat.typing"]

@@ -18,6 +18,7 @@ PROJECT = nox.project.load_toml()
 
 nox.needs_version = ">=2025.2.9"
 nox.options.default_venv_backend = "uv|virtualenv"
+nox.options.stop_on_first_error = True
 
 
 @nox.session

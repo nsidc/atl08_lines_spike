@@ -9,7 +9,8 @@ SOURCE_DATA_PATH = (
 )
 
 if not SOURCE_DATA_PATH.is_file():
-    raise RuntimeError("Source data path does not exist.")
+    msg = "Source data path does not exist."
+    raise RuntimeError(msg)
 
 
 if __name__ == "__main__":
