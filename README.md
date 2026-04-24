@@ -2,19 +2,18 @@
   <img alt="NSIDC logo" src="https://nsidc.org/themes/custom/nsidc/logo.svg" width="150" />
 </p>
 
-
 # ATL08 Lines Spike
 
-> [!WARNING] 
+<!-- prettier-ignore -->
+> [!WARNING]
 > This repository is experimental.
 
-Code for converting ATL08 .h5 data into polylines for viewing in GIS environments.
-
+Code for converting ATL08 .h5 data into polylines for viewing in GIS
+environments.
 
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
-
 
 ## Level of Support
 
@@ -24,8 +23,7 @@ submissions and pull requests in order to foster community contribution.
 See the [LICENSE](LICENSE) for details on permissions and warranties. Please
 contact nsidc@nsidc.org for more information.
 
-
 ## Credit
 
-This content was developed by the National Snow and Ice Data Center with funding from
-multiple sources.
+This content was developed by the National Snow and Ice Data Center with funding
+from multiple sources.
