@@ -11,6 +11,11 @@
 Code for converting ATL08 .h5 data into polylines for viewing in GIS environments.
 
 
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+
 ## Level of Support
 
 This repository is not actively supported by NSIDC but we welcome issue
