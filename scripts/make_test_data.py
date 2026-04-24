@@ -4,7 +4,9 @@ import xarray as xr
 
 TEST_DIR = Path(__file__).parent / ".." / "tests"
 
-SOURCE_DATA_PATH = Path(__file__).parent / ".." / "data" / "ATL08_20260118035703_05313006_007_01.h5"
+SOURCE_DATA_PATH = (
+    Path(__file__).parent / ".." / "data" / "ATL08_20260118035703_05313006_007_01.h5"
+)
 
 if not SOURCE_DATA_PATH.is_file():
     raise RuntimeError("Source data path does not exist.")
@@ -15,7 +17,11 @@ if __name__ == "__main__":
     test_data_dir.mkdir(exist_ok=True, parents=True)
 
     for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
-        ds = xr.open_dataset(SOURCE_DATA_PATH, group=f"{ground_track}/land_segments/", chunks={})
+        ds = xr.open_dataset(
+            SOURCE_DATA_PATH,
+            group=f"{ground_track}/land_segments/",
+            chunks={},
+        )
         lats = ds.latitude
         filtered_lats = xr.concat(
             [
@@ -47,4 +53,3 @@ if __name__ == "__main__":
             group=f"{ground_track}/land_segments/",
             mode="a",
         )
-
