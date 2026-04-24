@@ -13,7 +13,7 @@ description = "Code for converting ATL08 .h5 data into polylines for viewing in 
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 1 - Planning",
   "Intended Audience :: Science/Research",
@@ -22,7 +22,6 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -45,7 +44,6 @@ Homepage = "https://github.com/nsidc/atl08_lines_spike"
 Discussions = "https://github.com/nsidc/atl08_lines_spike/discussions"
 Changelog = "https://github.com/nsidc/atl08_lines_spike/releases"
 
-
 [dependency-groups]
 test = [
   "pytest >=9",
@@ -56,7 +54,9 @@ dev = [
   "ipdb>=0.13.13",
   "ipython>=8.39.0",
 ]
-docs = []
+docs = [
+    "great-docs>=0.9",
+]
 
 
 [tool.pytest]
@@ -82,7 +82,7 @@ report.exclude_also = [
 
 [tool.mypy]
 files = ["src", "tests"]
-python_version = "3.10"
+python_version = "3.11"
 warn_unused_configs = true
 strict = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
