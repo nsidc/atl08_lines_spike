@@ -1,8 +1,36 @@
 from pathlib import Path
+from typing import cast
 
 import geopandas as gpd
 import xarray as xr
+import pandas as pd
 from shapely.geometry import LineString
+
+
+def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
+    """Return a GeoDataFrame containing points representing ground tracks.
+    """
+    gdfs = []
+    for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
+        ds = xr.open_dataset(
+            filepath, group=f"{ground_track}/land_segments/", chunks={}
+        )
+        lats = ds.latitude
+        lons = ds.longitude
+
+        gdf = gpd.GeoDataFrame(
+            data={"ground_track": [ground_track] * len(lons)},
+            geometry=gpd.points_from_xy(lons, lats),
+            crs="EPSG:4326",
+        )
+
+        gdfs.append(gdf)
+
+    combined_gdf = pd.concat(gdfs)
+    combined_gdf = cast(gpd.GeoDataFrame, combined_gdf)
+
+    return combined_gdf
+
 
 
 def read_geoms_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
@@ -12,20 +40,10 @@ def read_geoms_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
     GeoDataFrame contains one linestring per ground track from the
     `land_segments` group in the given ATL08 filepath.
     """
+    points = read_points_from_atl08(filepath=filepath)
     linestrings = {}
     for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
-        ds = xr.open_dataset(
-            filepath, group=f"{ground_track}/land_segments/", chunks={}
-        )
-        lats = ds.latitude
-        lons = ds.longitude
-
-        gdf = gpd.GeoDataFrame(
-            geometry=gpd.points_from_xy(lons, lats),
-            crs="EPSG:4326",
-        )
-
-        linestring = LineString(gdf.geometry.to_list())
+        linestring = LineString(points[points.ground_track == ground_track].geometry.to_list())
 
         linestrings[ground_track] = linestring
 
