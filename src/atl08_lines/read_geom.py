@@ -33,14 +33,13 @@ def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
 
 
 
-def read_geoms_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
+def lines_from_atl08_points(*, points: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """Return a GeoDataFrame containing linestrings representing ground tracks.
 
 
     GeoDataFrame contains one linestring per ground track from the
     `land_segments` group in the given ATL08 filepath.
     """
-    points = read_points_from_atl08(filepath=filepath)
     linestrings = {}
     for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
         linestring = LineString(points[points.ground_track == ground_track].geometry.to_list())
