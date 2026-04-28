@@ -100,6 +100,7 @@ disallow_incomplete_defs = true
 [[tool.mypy.overrides]]
 module = [
   "geopandas.*",
+  "pandas.*",
   "shapely.*",
   "xarray.*",
 ]
