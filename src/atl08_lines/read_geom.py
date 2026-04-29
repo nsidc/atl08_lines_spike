@@ -34,6 +34,59 @@ def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
     return combined_gdf
 
 
+def _linestring_for_isolated_point(
+    *,
+    isolated_point: gpd.GeoDataFrame,
+    points_for_track: gpd.GeoDataFrame,
+    geod: Geod,
+    isolated_point_line_meters: int,
+) -> LineString:
+    """Return a linestring for a single isolated point.
+
+    The single point is placed at the center of the linestring of
+    `isolated_point_line_meters` length.
+    """
+    point_idx = int(isolated_point.index[0])
+    if point_idx == 0:
+        adjacent_point = points_for_track.iloc[1]
+    else:
+        adjacent_point = points_for_track.iloc[point_idx - 1]
+
+    # Find the forward azimuth between the isolated point and it's adjacent point
+    fwd_az, back_az, _ = geod.inv(
+        lons1=isolated_point.geometry.x,
+        lats1=isolated_point.geometry.y,
+        lons2=adjacent_point.geometry.x,
+        lats2=adjacent_point.geometry.y,
+    )
+
+    # Use the fwd and back azimuth to project points away from the
+    # isolated point to construct a short line
+    new_fwd_lon, new_fwd_lat, _ = geod.fwd(
+        lons=isolated_point.geometry.x,
+        lats=isolated_point.geometry.y,
+        az=fwd_az,
+        dist=isolated_point_line_meters / 2,
+    )
+
+    new_back_lon, new_back_lat, _ = geod.fwd(
+        lons=isolated_point.geometry.x,
+        lats=isolated_point.geometry.y,
+        az=back_az,
+        dist=isolated_point_line_meters / 2,
+    )
+
+    line = LineString(
+        [
+            Point(new_back_lon, new_back_lat),
+            *isolated_point.geometry.to_list(),
+            Point(new_fwd_lon, new_fwd_lat),
+        ]
+    )
+
+    return line
+
+
 def lines_from_atl08_points(
     *,
     points: gpd.GeoDataFrame,
@@ -93,42 +146,11 @@ def lines_from_atl08_points(
         for group_idx in set(groups):
             points_for_group = points_for_track[points_for_track.group == group_idx]
             if len(points_for_group) == 1:
-                point_idx = int(points_for_group.index[0])
-                if point_idx == 0:
-                    adjacent_point = points_for_track.iloc[1]
-                else:
-                    adjacent_point = points_for_track.iloc[point_idx - 1]
-
-                # Find the forward azimuth between the isolated point and it's adjacent point
-                fwd_az, back_az, _ = geod.inv(
-                    lons1=points_for_group.geometry.x,
-                    lats1=points_for_group.geometry.y,
-                    lons2=adjacent_point.geometry.x,
-                    lats2=adjacent_point.geometry.y,
-                )
-
-                # Use the fwd and back azimuth to project points away from the
-                # isolated point to construct a short line
-                new_fwd_lon, new_fwd_lat, _ = geod.fwd(
-                    lons=points_for_group.geometry.x,
-                    lats=points_for_group.geometry.y,
-                    az=fwd_az,
-                    dist=isolated_point_line_meters / 2,
-                )
-
-                new_back_lon, new_back_lat, _ = geod.fwd(
-                    lons=points_for_group.geometry.x,
-                    lats=points_for_group.geometry.y,
-                    az=back_az,
-                    dist=isolated_point_line_meters / 2,
-                )
-
-                line = LineString(
-                    [
-                        Point(new_back_lon, new_back_lat),
-                        *points_for_group.geometry.to_list(),
-                        Point(new_fwd_lon, new_fwd_lat),
-                    ]
+                line = _linestring_for_isolated_point(
+                    isolated_point=points_for_group,
+                    points_for_track=points_for_track,
+                    geod=geod,
+                    isolated_point_line_meters=isolated_point_line_meters,
                 )
             else:
                 line = LineString(points_for_group.geometry.to_list())
