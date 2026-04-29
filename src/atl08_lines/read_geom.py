@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pyproj import Geod
-from shapely import linestrings
+from shapely import LineString, Point
 from shapely.geometry import MultiLineString
 
 
@@ -41,11 +41,34 @@ def lines_from_atl08_points(
 
     GeoDataFrame contains one MultiLineString per ground track from the
     `land_segments` group in the given ATL08 filepath.
+
+    Each consitutient LineString in the MultiLineString for a ground track
+    represents a continuous line of points with valid observations. Gaps greater
+    than `gap_threshold_meters` are where linestrings are split, so that no-data
+    areas are more obvious.
+
+    TODO/NOTE: currently, single isolated points are represented by a line 0.25m in
+    length. We simply project a point 0.25m along the track from the isolated
+    point so that it can be represented without needing to mix geometry types
+    (which is usually not possible in a single GIS layer). This might be a bit
+    misleading, but is probably better than dropping the point or connecting it
+    to an adjacent line that might be far away. We should consider different
+    distances for these short lines (maybe make it even less than 0.25 m?)
+
+    TODO/NOTE: currently, lines are constructed from the lat/lon pairs from the
+    ATL08 data file, but the ground resolution/area of each point is not
+    considered (i.e., the footprint size of each spot on the ground is
+    ~17m). Maybe we should buffer endpoints of lines to account for the spot
+    size? In which case isolated points could be represented as a line 17m in
+    length and the isolated point would be the center of that line? This would
+    also be misleading, because we would only be representing this in one axis
+    (line length - polyons would be necessary to capture the actual "shape" of
+    the ground track).
     """
     geod = Geod(ellps="WGS84")
     multi_linestrings = {}
     for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
-        points_for_track = points[points.ground_track == ground_track]
+        points_for_track = points[points.ground_track == ground_track].copy()
 
         # Distances between consecutive pairs in meters
         _, _, distances = geod.inv(
@@ -61,12 +84,45 @@ def lines_from_atl08_points(
         # found above.
         groups = np.searchsorted(gaps, points_for_track.index)
 
-        # Construct multilinestring
-        lines = linestrings(
-            points_for_track.geometry.x,
-            points_for_track.geometry.y,
-            indices=groups,
-        )
+        points_for_track["group"] = groups
+
+        lines = []
+        for group_idx in set(groups):
+            points_for_group = points_for_track[points_for_track.group == group_idx]
+            if len(points_for_group) == 1:
+                point_idx = int(points_for_group.index[0])
+                if point_idx == 0:
+                    adjacent_point = points_for_track.iloc[1]
+                else:
+                    adjacent_point = points_for_track.iloc[point_idx - 1]
+
+                # Find the forward azimuth between the isolated point and it's adjacent point
+                fwd_az, _, _ = geod.inv(
+                    lons1=points_for_group.geometry.x,
+                    lats1=points_for_group.geometry.y,
+                    lons2=adjacent_point.geometry.x,
+                    lats2=adjacent_point.geometry.y,
+                )
+
+                # Use the fwd azimuth to project a point 0.25m away from the
+                # isolated point to construct a short line
+                new_lon, new_lat, _ = geod.fwd(
+                    lons=points_for_group.geometry.x,
+                    lats=points_for_group.geometry.y,
+                    az=fwd_az,
+                    # TODO: consider different sized distance for these tiny
+                    # lines.
+                    dist=0.25,
+                )
+
+                line = LineString(
+                    [*points_for_group.geometry.to_list(), Point(new_lon, new_lat)]
+                )
+            else:
+                line = LineString(points_for_group.geometry.to_list())
+
+            lines.append(line)
+
         multi_line = MultiLineString(lines=list(lines))
 
         # Track multilinestring per ground track
