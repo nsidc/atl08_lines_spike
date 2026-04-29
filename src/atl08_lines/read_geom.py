@@ -2,9 +2,12 @@ from pathlib import Path
 from typing import cast
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import xarray as xr
-from shapely.geometry import LineString
+from pyproj import Geod
+from shapely import linestrings
+from shapely.geometry import MultiLineString
 
 
 def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
@@ -31,24 +34,48 @@ def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
     return combined_gdf
 
 
-def lines_from_atl08_points(*, points: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def lines_from_atl08_points(
+    *, points: gpd.GeoDataFrame, gap_threshold_meters: int = 500
+) -> gpd.GeoDataFrame:
     """Return a GeoDataFrame containing linestrings representing ground tracks.
 
-    GeoDataFrame contains one linestring per ground track from the
+    GeoDataFrame contains one MultiLineString per ground track from the
     `land_segments` group in the given ATL08 filepath.
     """
-    linestrings = {}
+    geod = Geod(ellps="WGS84")
+    multi_linestrings = {}
     for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
-        linestring = LineString(
-            points[points.ground_track == ground_track].geometry.to_list()
+        points_for_track = points[points.ground_track == ground_track]
+
+        # Distances between consecutive pairs in meters
+        _, _, distances = geod.inv(
+            lons1=points_for_track.geometry.x[:-1],
+            lats1=points_for_track.geometry.y[:-1],
+            lons2=points_for_track.geometry.x[1:],
+            lats2=points_for_track.geometry.y[1:],
         )
 
-        linestrings[ground_track] = linestring
+        # Find gaps where distances are gt the threshold
+        gaps = np.where(distances > gap_threshold_meters)[0]
+        # create groupings of indices for each linestring, split by the gaps
+        # found above.
+        groups = np.searchsorted(gaps, points_for_track.index)
 
-    lines = gpd.GeoDataFrame(
-        data={"ground_track": list(linestrings.keys())},
-        geometry=list(linestrings.values()),
+        # Construct multilinestring
+        lines = linestrings(
+            points_for_track.geometry.x,
+            points_for_track.geometry.y,
+            indices=groups,
+        )
+        multi_line = MultiLineString(lines=list(lines))
+
+        # Track multilinestring per ground track
+        multi_linestrings[ground_track] = multi_line
+
+    all_lines = gpd.GeoDataFrame(
+        data={"ground_track": list(multi_linestrings.keys())},
+        geometry=list(multi_linestrings.values()),
         crs="EPSG:4326",
     )
 
-    return lines
+    return all_lines
