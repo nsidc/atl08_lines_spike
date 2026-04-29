@@ -54,24 +54,30 @@ def _linestring_for_isolated_point(
 
     # Find the forward azimuth between the isolated point and it's adjacent point
     fwd_az, back_az, _ = geod.inv(
-        lons1=isolated_point.geometry.x,
-        lats1=isolated_point.geometry.y,
-        lons2=adjacent_point.geometry.x,
-        lats2=adjacent_point.geometry.y,
+        # Ensure all lat/lon inputs are a list of floats. FutureWarning is raised from
+        # the pyproj internals otherwise.
+        lons1=[float(isolated_point.geometry.x.to_numpy()[0])],
+        lats1=[float(isolated_point.geometry.y.to_numpy()[0])],
+        lons2=[float(adjacent_point.geometry.x)],
+        lats2=[float(adjacent_point.geometry.y)],
     )
 
     # Use the fwd and back azimuth to project points away from the
     # isolated point to construct a short line
     new_fwd_lon, new_fwd_lat, _ = geod.fwd(
-        lons=isolated_point.geometry.x,
-        lats=isolated_point.geometry.y,
+        # Ensure all lat/lon inputs are a list of floats. FutureWarning is raised from
+        # the pyproj internals otherwise.
+        lons=[float(isolated_point.geometry.x.to_numpy()[0])],
+        lats=[float(isolated_point.geometry.y.to_numpy()[0])],
         az=fwd_az,
         dist=isolated_point_line_meters / 2,
     )
 
     new_back_lon, new_back_lat, _ = geod.fwd(
-        lons=isolated_point.geometry.x,
-        lats=isolated_point.geometry.y,
+        # Ensure all lat/lon inputs are a list of floats. FutureWarning is raised from
+        # the pyproj internals otherwise.
+        lons=[float(isolated_point.geometry.x.to_numpy()[0])],
+        lats=[float(isolated_point.geometry.y.to_numpy()[0])],
         az=back_az,
         dist=isolated_point_line_meters / 2,
     )
