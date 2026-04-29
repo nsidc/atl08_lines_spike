@@ -35,7 +35,10 @@ def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
 
 
 def lines_from_atl08_points(
-    *, points: gpd.GeoDataFrame, gap_threshold_meters: int = 500
+    *,
+    points: gpd.GeoDataFrame,
+    gap_threshold_meters: int = 500,
+    isolated_point_line_meters: int = 17,  # 17m is the approx. ground spot size of IceSat2.
 ) -> gpd.GeoDataFrame:
     """Return a GeoDataFrame containing linestrings representing ground tracks.
 
@@ -104,24 +107,20 @@ def lines_from_atl08_points(
                     lats2=adjacent_point.geometry.y,
                 )
 
-                # Use the fwd azimuth to project a point 0.25m away from the
+                # Use the fwd and back azimuth to project points away from the
                 # isolated point to construct a short line
                 new_fwd_lon, new_fwd_lat, _ = geod.fwd(
                     lons=points_for_group.geometry.x,
                     lats=points_for_group.geometry.y,
                     az=fwd_az,
-                    # 8.5 is half of 17, which is the approx. ground spot size
-                    # for IceSat2 points
-                    dist=8.5,
+                    dist=isolated_point_line_meters / 2,
                 )
 
                 new_back_lon, new_back_lat, _ = geod.fwd(
                     lons=points_for_group.geometry.x,
                     lats=points_for_group.geometry.y,
                     az=back_az,
-                    # 8.5 is half of 17, which is the approx. ground spot size
-                    # for IceSat2 points
-                    dist=8.5,
+                    dist=isolated_point_line_meters / 2,
                 )
 
                 line = LineString(
