@@ -22,16 +22,22 @@ def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
         lats = ds.latitude
         lons = ds.longitude
         canopy_heights = ds.canopy.h_canopy
+        delta_time = ds.delta_time
 
         gdf = gpd.GeoDataFrame(
             data={
                 "ground_track": [ground_track] * len(lons),
                 "source_filename": [filepath.name] * len(lons),
                 "h_canopy": canopy_heights,
+                "delta_time": delta_time,
             },
             geometry=gpd.points_from_xy(lons, lats),
             crs="EPSG:4326",
         )
+
+        # Localize the timestamp to UTC. Otherwise it inherits the system TZ
+        # (e.g., MST).
+        gdf["delta_time"] = gdf.delta_time.dt.tz_localize("UTC")
 
         gdfs.append(gdf)
 
@@ -180,6 +186,8 @@ def lines_from_atl08_points(
             "h_canopy_min": points_for_track.h_canopy.min(),
             "h_canopy_max": points_for_track.h_canopy.max(),
             "h_canopy_std": points_for_track.h_canopy.std(),
+            "delta_time_start": points_for_track.delta_time.min(),
+            "delta_time_end": points_for_track.delta_time.max(),
         }
 
     all_lines = gpd.GeoDataFrame(
@@ -198,6 +206,12 @@ def lines_from_atl08_points(
             ],
             "h_canopy_std": [
                 line["h_canopy_std"] for line in multi_linestrings.values()
+            ],
+            "delta_time_start": [
+                line["delta_time_start"] for line in multi_linestrings.values()
+            ],
+            "delta_time_end": [
+                line["delta_time_end"] for line in multi_linestrings.values()
             ],
         },
         geometry=[line["geometry"] for line in multi_linestrings.values()],

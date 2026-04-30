@@ -23,6 +23,8 @@ def test_read_point_geoms_from_atl08():
 
     assert points.h_canopy is not None
 
+    assert points.delta_time is not None
+
 
 def test_lines_from_atl08_points():
     test_data_path = TEST_DATA_DIR / "test_atl08.h5"
@@ -39,6 +41,9 @@ def test_lines_from_atl08_points():
     assert lines.h_canopy_max is not None
     assert lines.h_canopy_std is not None
     assert lines.h_canopy_mean is not None
+
+    assert lines.delta_time_start is not None
+    assert lines.delta_time_end is not None
 
 
 def test__linestring_for_isolated_point():
