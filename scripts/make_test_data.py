@@ -22,7 +22,7 @@ if __name__ == "__main__":
     test_data_filepath.unlink(missing_ok=True)
 
     for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
-        ds = xr.open_dataset(
+        ds = xr.open_datatree(
             SOURCE_DATA_PATH,
             group=f"{ground_track}/land_segments/",
             chunks={},
@@ -54,15 +54,32 @@ if __name__ == "__main__":
             coords="minimal",
         )
 
-        test_ds = xr.Dataset(
+        canopy_heights = ds.canopy.h_canopy
+        filtered_canopy_heights = xr.concat(
+            [
+                # First 50 observations
+                canopy_heights.isel(delta_time=slice(0, 50)),
+                # One isolated point in the middle
+                canopy_heights.isel(delta_time=int(len(canopy_heights) / 2)),
+                # Last 50 observations
+                canopy_heights.isel(delta_time=slice(-50, None)),
+            ],
+            dim="delta_time",
+            coords="minimal",
+        )
+
+        test_ds = xr.DataTree.from_dict(
             {
-                "latitude": filtered_lats,
-                "longitude": filtered_lons,
-            }
+                f"{ground_track}/land_segments/": {
+                    "latitude": filtered_lats,
+                    "longitude": filtered_lons,
+                    "canopy": {"h_canopy": filtered_canopy_heights},
+                }
+            },
+            nested=True,
         )
 
         test_ds.to_netcdf(
             test_data_filepath,
-            group=f"{ground_track}/land_segments/",
             mode="a",
         )
