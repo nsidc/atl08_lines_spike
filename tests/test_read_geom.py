@@ -21,6 +21,8 @@ def test_read_point_geoms_from_atl08():
     # One line per expected ground track
     assert len(set(points.ground_track)) == 6
 
+    assert points.h_canopy is not None
+
 
 def test_lines_from_atl08_points():
     test_data_path = TEST_DATA_DIR / "test_atl08.h5"
@@ -32,6 +34,11 @@ def test_lines_from_atl08_points():
     assert lines is not None
     # One line per expected ground track
     assert len(lines.ground_track) == 6
+
+    assert lines.h_canopy_min is not None
+    assert lines.h_canopy_max is not None
+    assert lines.h_canopy_std is not None
+    assert lines.h_canopy_mean is not None
 
 
 def test__linestring_for_isolated_point():

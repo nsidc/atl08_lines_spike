@@ -14,16 +14,20 @@ def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
     """Return a GeoDataFrame containing points representing ground tracks."""
     gdfs = []
     for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
-        ds = xr.open_dataset(
-            filepath, group=f"{ground_track}/land_segments/", chunks={}
+        ds = xr.open_datatree(
+            filepath,
+            group=f"{ground_track}/land_segments/",
+            chunks={},
         )
         lats = ds.latitude
         lons = ds.longitude
+        canopy_heights = ds.canopy.h_canopy
 
         gdf = gpd.GeoDataFrame(
             data={
                 "ground_track": [ground_track] * len(lons),
                 "source_filename": [filepath.name] * len(lons),
+                "h_canopy": canopy_heights,
             },
             geometry=gpd.points_from_xy(lons, lats),
             crs="EPSG:4326",
@@ -169,16 +173,34 @@ def lines_from_atl08_points(
 
         multi_line = MultiLineString(lines=list(lines))
 
-        # Track multilinestring per ground track
-        multi_linestrings[ground_track] = multi_line
+        # Track multilinestring and attrs per ground track
+        multi_linestrings[ground_track] = {
+            "geometry": multi_line,
+            "h_canopy_mean": points_for_track.h_canopy.mean(),
+            "h_canopy_min": points_for_track.h_canopy.min(),
+            "h_canopy_max": points_for_track.h_canopy.max(),
+            "h_canopy_std": points_for_track.h_canopy.std(),
+        }
 
     all_lines = gpd.GeoDataFrame(
         data={
             "ground_track": list(multi_linestrings.keys()),
             "source_filename": [list(set(points.source_filename))[0]]
             * len(multi_linestrings),
+            "h_canopy_min": [
+                line["h_canopy_min"] for line in multi_linestrings.values()
+            ],
+            "h_canopy_max": [
+                line["h_canopy_max"] for line in multi_linestrings.values()
+            ],
+            "h_canopy_mean": [
+                line["h_canopy_mean"] for line in multi_linestrings.values()
+            ],
+            "h_canopy_std": [
+                line["h_canopy_std"] for line in multi_linestrings.values()
+            ],
         },
-        geometry=list(multi_linestrings.values()),
+        geometry=[line["geometry"] for line in multi_linestrings.values()],
         crs="EPSG:4326",
     )
 
