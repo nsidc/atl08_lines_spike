@@ -32,7 +32,9 @@ def atl08_to_points(input_filepath: Path, output_filepath: Path) -> None:
     help="Length, in meters, between consecutive points that when exceeded should be considered a 'gap' and produce a new line segment.",
 )  # type: ignore[untyped-decorator]
 def atl08_to_lines(
-    input_filepath: Path, output_filepath: Path, gap_threshold_meters: int
+    input_filepath: Path,
+    output_filepath: Path,
+    gap_threshold_meters: int,
 ) -> None:
     """Given an ATL08 hdf5 as input, output a file with line geometries."""
     points = read_points_from_atl08(filepath=input_filepath)

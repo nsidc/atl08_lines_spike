@@ -21,7 +21,10 @@ def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
         lons = ds.longitude
 
         gdf = gpd.GeoDataFrame(
-            data={"ground_track": [ground_track] * len(lons)},
+            data={
+                "ground_track": [ground_track] * len(lons),
+                "source_filename": [filepath.name] * len(lons),
+            },
             geometry=gpd.points_from_xy(lons, lats),
             crs="EPSG:4326",
         )
@@ -29,6 +32,7 @@ def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
         gdfs.append(gdf)
 
     combined_gdf = pd.concat(gdfs)
+    combined_gdf.attrs["source_filename"] = filepath.name
     combined_gdf = cast("gpd.GeoDataFrame", combined_gdf)
 
     return combined_gdf
@@ -169,7 +173,11 @@ def lines_from_atl08_points(
         multi_linestrings[ground_track] = multi_line
 
     all_lines = gpd.GeoDataFrame(
-        data={"ground_track": list(multi_linestrings.keys())},
+        data={
+            "ground_track": list(multi_linestrings.keys()),
+            "source_filename": [list(set(points.source_filename))[0]]
+            * len(multi_linestrings),
+        },
         geometry=list(multi_linestrings.values()),
         crs="EPSG:4326",
     )
