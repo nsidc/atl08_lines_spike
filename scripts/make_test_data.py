@@ -16,6 +16,10 @@ if not SOURCE_DATA_PATH.is_file():
 if __name__ == "__main__":
     test_data_dir = TEST_DIR / "data"
     test_data_dir.mkdir(exist_ok=True, parents=True)
+    test_data_filepath = test_data_dir / "test_atl08.h5"
+
+    # Remove the existing test data file if it already exists.
+    test_data_filepath.unlink(missing_ok=True)
 
     for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
         ds = xr.open_dataset(
@@ -26,7 +30,11 @@ if __name__ == "__main__":
         lats = ds.latitude
         filtered_lats = xr.concat(
             [
+                # First 50 observations
                 lats.isel(delta_time=slice(0, 50)),
+                # One isolated point in the middle
+                lats.isel(delta_time=int(len(lats) / 2)),
+                # Last 50 observations
                 lats.isel(delta_time=slice(-50, None)),
             ],
             dim="delta_time",
@@ -35,7 +43,11 @@ if __name__ == "__main__":
         lons = ds.longitude
         filtered_lons = xr.concat(
             [
+                # First 50 observations
                 lons.isel(delta_time=slice(0, 50)),
+                # One isolated point in the middle
+                lons.isel(delta_time=int(len(lons) / 2)),
+                # Last 50 observations
                 lons.isel(delta_time=slice(-50, None)),
             ],
             dim="delta_time",
@@ -50,7 +62,7 @@ if __name__ == "__main__":
         )
 
         test_ds.to_netcdf(
-            test_data_dir / "test_atl08.h5",
+            test_data_filepath,
             group=f"{ground_track}/land_segments/",
             mode="a",
         )

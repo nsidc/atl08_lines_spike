@@ -2,9 +2,12 @@ from pathlib import Path
 from typing import cast
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import xarray as xr
-from shapely.geometry import LineString
+from pyproj import Geod
+from shapely import LineString, Point
+from shapely.geometry import MultiLineString
 
 
 def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
@@ -31,24 +34,144 @@ def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
     return combined_gdf
 
 
-def lines_from_atl08_points(*, points: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def _linestring_for_isolated_point(
+    *,
+    isolated_point: gpd.GeoDataFrame,
+    points_for_track: gpd.GeoDataFrame,
+    geod: Geod,
+    isolated_point_line_meters: int,
+) -> LineString:
+    """Return a linestring for a single isolated point.
+
+    The single point is placed at the center of the linestring of
+    `isolated_point_line_meters` length.
+    """
+    point_idx = int(isolated_point.index[0])
+    if point_idx == 0:
+        adjacent_point = points_for_track.iloc[1]
+    else:
+        adjacent_point = points_for_track.iloc[point_idx - 1]
+
+    # Find the forward azimuth between the isolated point and it's adjacent point
+    fwd_az, back_az, _ = geod.inv(
+        # Ensure all lat/lon inputs are a list of floats. FutureWarning is raised from
+        # the pyproj internals otherwise.
+        lons1=[float(isolated_point.geometry.x.to_numpy()[0])],
+        lats1=[float(isolated_point.geometry.y.to_numpy()[0])],
+        lons2=[float(adjacent_point.geometry.x)],
+        lats2=[float(adjacent_point.geometry.y)],
+    )
+
+    # Use the fwd and back azimuth to project points away from the
+    # isolated point to construct a short line
+    new_fwd_lon, new_fwd_lat, _ = geod.fwd(
+        # Ensure all lat/lon inputs are a list of floats. FutureWarning is raised from
+        # the pyproj internals otherwise.
+        lons=[float(isolated_point.geometry.x.to_numpy()[0])],
+        lats=[float(isolated_point.geometry.y.to_numpy()[0])],
+        az=fwd_az,
+        dist=isolated_point_line_meters / 2,
+    )
+
+    new_back_lon, new_back_lat, _ = geod.fwd(
+        # Ensure all lat/lon inputs are a list of floats. FutureWarning is raised from
+        # the pyproj internals otherwise.
+        lons=[float(isolated_point.geometry.x.to_numpy()[0])],
+        lats=[float(isolated_point.geometry.y.to_numpy()[0])],
+        az=back_az,
+        dist=isolated_point_line_meters / 2,
+    )
+
+    line = LineString(
+        [
+            Point(new_back_lon, new_back_lat),
+            *isolated_point.geometry.to_list(),
+            Point(new_fwd_lon, new_fwd_lat),
+        ]
+    )
+
+    return line
+
+
+def lines_from_atl08_points(
+    *,
+    points: gpd.GeoDataFrame,
+    gap_threshold_meters: int = 500,
+    isolated_point_line_meters: int = 17,  # 17m is the approx. ground spot size of IceSat2.
+) -> gpd.GeoDataFrame:
     """Return a GeoDataFrame containing linestrings representing ground tracks.
 
-    GeoDataFrame contains one linestring per ground track from the
+    GeoDataFrame contains one MultiLineString per ground track from the
     `land_segments` group in the given ATL08 filepath.
+
+    Each consitutient LineString in the MultiLineString for a ground track
+    represents a continuous line of points with valid observations. Gaps greater
+    than `gap_threshold_meters` are where linestrings are split, so that no-data
+    areas are more obvious.
+
+    NOTE: Single isolated points are represented by a line 17m in length (which
+    is the approx. ground spot size of IceSat2). The isolated point lies at the
+    center of the line, and endpoints are projected out from it (8.5m in each
+    direction). We do this so that single points can be represented without
+    needing to mix geometry types (which is usually not possible in a single GIS
+    layer). This is a bit misleading, but is probably better than dropping
+    the point or connecting it to an adjacent line that might be far away.
+
+    TODO/NOTE: currently, lines are constructed from the lat/lon pairs from the
+    ATL08 data file, but the ground resolution/area of each point is not
+    considered (i.e., the footprint size of each spot on the ground is
+    ~17m). Maybe we should buffer endpoints of lines to account for the spot
+    size? Isolated points are represented as a line 17m in
+    length and the isolated point is the center of that line. This is
+    also be misleading, because we would only be representing this in one axis
+    (line length - polyons would be necessary to capture the actual "shape" of
+    the ground track).
     """
-    linestrings = {}
+    geod = Geod(ellps="WGS84")
+    multi_linestrings = {}
     for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
-        linestring = LineString(
-            points[points.ground_track == ground_track].geometry.to_list()
+        points_for_track = points[points.ground_track == ground_track].copy()
+
+        # Distances between consecutive pairs in meters
+        _, _, distances = geod.inv(
+            lons1=points_for_track.geometry.x[:-1],
+            lats1=points_for_track.geometry.y[:-1],
+            lons2=points_for_track.geometry.x[1:],
+            lats2=points_for_track.geometry.y[1:],
         )
 
-        linestrings[ground_track] = linestring
+        # Find gaps where distances are gt the threshold
+        gaps = np.where(distances > gap_threshold_meters)[0]
+        # create groupings of indices for each linestring, split by the gaps
+        # found above.
+        groups = np.searchsorted(gaps, points_for_track.index)
 
-    lines = gpd.GeoDataFrame(
-        data={"ground_track": list(linestrings.keys())},
-        geometry=list(linestrings.values()),
+        points_for_track["group"] = groups
+
+        lines = []
+        for group_idx in set(groups):
+            points_for_group = points_for_track[points_for_track.group == group_idx]
+            if len(points_for_group) == 1:
+                line = _linestring_for_isolated_point(
+                    isolated_point=points_for_group,
+                    points_for_track=points_for_track,
+                    geod=geod,
+                    isolated_point_line_meters=isolated_point_line_meters,
+                )
+            else:
+                line = LineString(points_for_group.geometry.to_list())
+
+            lines.append(line)
+
+        multi_line = MultiLineString(lines=list(lines))
+
+        # Track multilinestring per ground track
+        multi_linestrings[ground_track] = multi_line
+
+    all_lines = gpd.GeoDataFrame(
+        data={"ground_track": list(multi_linestrings.keys())},
+        geometry=list(multi_linestrings.values()),
         crs="EPSG:4326",
     )
 
-    return lines
+    return all_lines
