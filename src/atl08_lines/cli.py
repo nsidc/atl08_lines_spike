@@ -31,10 +31,17 @@ def atl08_to_points(input_filepath: Path, output_filepath: Path) -> None:
     type=int,
     help="Length, in meters, between consecutive points that when exceeded should be considered a 'gap' and produce a new line segment.",
 )  # type: ignore[untyped-decorator]
+@click.option(
+    "--simplify-line-tolerance",
+    default=None,
+    type=float,
+    help="Simplify the line with the given tolerance. Tolerance is given in degrees. See https://shapely.readthedocs.io/en/stable/reference/shapely.simplify.html for more information. If not given, no simplification will be applied.",
+)  # type: ignore[untyped-decorator]
 def atl08_to_lines(
     input_filepath: Path,
     output_filepath: Path,
     gap_threshold_meters: int,
+    simplify_line_tolerance: None | float,
 ) -> None:
     """Given an ATL08 hdf5 as input, output a file with line geometries."""
     points = read_points_from_atl08(filepath=input_filepath)
@@ -42,9 +49,50 @@ def atl08_to_lines(
     lines = lines_from_atl08_points(
         points=points,
         gap_threshold_meters=gap_threshold_meters,
+        simplify_line_tolerance=simplify_line_tolerance,
     )
 
     lines.to_file(output_filepath)
+
+
+@cli.command()  # type: ignore[untyped-decorator]
+@click.argument("input_filepath", required=True, type=click.Path(path_type=Path))  # type: ignore[untyped-decorator]
+@click.argument(
+    "output_dir",
+    required=True,
+    type=click.Path(
+        file_okay=False, dir_okay=True, exists=True, writable=True, path_type=Path
+    ),
+)  # type: ignore[untyped-decorator]
+@click.option(
+    "--gap-threshold-meters",
+    default=500,
+    type=int,
+    help="Length, in meters, between consecutive points that when exceeded should be considered a 'gap' and produce a new line segment.",
+)  # type: ignore[untyped-decorator]
+@click.option(
+    "--simplify-line-tolerance",
+    default=None,
+    type=float,
+    help="Simplify the line with the given tolerance. Tolerance is given in degrees. See https://shapely.readthedocs.io/en/stable/reference/shapely.simplify.html for more information. If not given, no simplification will be applied.",
+)  # type: ignore[untyped-decorator]
+def atl08_to_lines_parquet(
+    input_filepath: Path,
+    output_dir: Path,
+    gap_threshold_meters: int,
+    simplify_line_tolerance: None | float,
+) -> None:
+    """Given an ATL08 hdf5 as input, output a file with line geometries as geoparquet."""
+    points = read_points_from_atl08(filepath=input_filepath)
+
+    lines = lines_from_atl08_points(
+        points=points,
+        gap_threshold_meters=gap_threshold_meters,
+        simplify_line_tolerance=simplify_line_tolerance,
+    )
+
+    output_filepath = output_dir / (input_filepath.stem + ".parquet")
+    lines.to_parquet(output_filepath)
 
 
 if __name__ == "__main__":
