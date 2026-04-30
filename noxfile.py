@@ -20,8 +20,10 @@ nox.needs_version = ">=2025.2.9"
 nox.options.default_venv_backend = "uv|virtualenv"
 nox.options.stop_on_first_error = True
 
+PYTHON_VERSION = "3.11"
 
-@nox.session
+
+@nox.session(python=[PYTHON_VERSION])
 def lint(session: nox.Session) -> None:
     """
     Run the linter.
@@ -32,7 +34,7 @@ def lint(session: nox.Session) -> None:
     )
 
 
-@nox.session
+@nox.session(python=[PYTHON_VERSION])
 def pylint(session: nox.Session) -> None:
     """
     Run Pylint.
@@ -43,7 +45,7 @@ def pylint(session: nox.Session) -> None:
     session.run("pylint", "atl08_lines", *session.posargs)
 
 
-@nox.session
+@nox.session(python=[PYTHON_VERSION])
 def tests(session: nox.Session) -> None:
     """
     Run the unit and regular tests.
@@ -53,7 +55,7 @@ def tests(session: nox.Session) -> None:
     session.run("pytest", *session.posargs)
 
 
-@nox.session(default=False)
+@nox.session(default=False, python=[PYTHON_VERSION])
 def build(session: nox.Session) -> None:
     """
     Build an SDist and wheel.
