@@ -13,8 +13,8 @@ def cli() -> None:
 
 
 @cli.command()  # type: ignore[untyped-decorator]
-@click.argument("input_filepath", required=True, type=click.Path())  # type: ignore[untyped-decorator]
-@click.argument("output_filepath", required=True, type=click.Path())  # type: ignore[untyped-decorator]
+@click.argument("input_filepath", required=True, type=click.Path(path_type=Path))  # type: ignore[untyped-decorator]
+@click.argument("output_filepath", required=True, type=click.Path(path_type=Path))  # type: ignore[untyped-decorator]
 def atl08_to_points(input_filepath: Path, output_filepath: Path) -> None:
     """Given an ATL08 hdf5 as input, output a file with point geometries."""
     points = read_points_from_atl08(filepath=input_filepath)
@@ -23,8 +23,8 @@ def atl08_to_points(input_filepath: Path, output_filepath: Path) -> None:
 
 
 @cli.command()  # type: ignore[untyped-decorator]
-@click.argument("input_filepath", required=True, type=click.Path())  # type: ignore[untyped-decorator]
-@click.argument("output_filepath", required=True, type=click.Path())  # type: ignore[untyped-decorator]
+@click.argument("input_filepath", required=True, type=click.Path(path_type=Path))  # type: ignore[untyped-decorator]
+@click.argument("output_filepath", required=True, type=click.Path(path_type=Path))  # type: ignore[untyped-decorator]
 @click.option(
     "--gap-threshold-meters",
     default=500,
