@@ -112,6 +112,7 @@ def lines_from_atl08_points(
     points: gpd.GeoDataFrame,
     gap_threshold_meters: int = 500,
     isolated_point_line_meters: int = 17,  # 17m is the approx. ground spot size of IceSat2.
+    simplify_line_tolerance: None | float = None,
 ) -> gpd.GeoDataFrame:
     """Return a GeoDataFrame containing linestrings representing ground tracks.
 
@@ -174,6 +175,10 @@ def lines_from_atl08_points(
                 )
             else:
                 line = LineString(points_for_group.geometry.to_list())
+
+            if simplify_line_tolerance is not None:
+                # Apply simplification to the line.
+                line = line.simplify(tolerance=0.0001)
 
             lines.append(line)
 
