@@ -1,0 +1,30 @@
+# This conda env is a preliminary test that we can build a conda env with atl08
+# processing deps as required by EGIS.
+name: atl08-lines-with-arcgis
+channels:
+  - nodefaults
+  - conda-forge
+  - esri
+dependencies:
+  # These dependencies are required for EGIS
+  - arcgis-server-py3=11.5.0 # the ArcPy version MUST be updated each time EGIS updates our Enterprise version
+  - jinja2
+  - numpy
+  - pandas
+  - python>=3.9
+  - pyyaml
+  - requests
+  - yaml
+
+  # These dependencies are for ATL08 processing specifically
+  - click>=8.3.3
+  - dask>=2026.3.0
+  - geopandas>=1.1.3
+  - h5netcdf>=1.8.1
+  - h5py>=3.16.0
+  - pyarrow>=24.0.0
+  - pyproj>=3.7.1
+  - shapely>=2.1.2
+  - xarray>=2025.6.1
+variables:
+  ARCGISHOME: /opt/arcgis/server/
