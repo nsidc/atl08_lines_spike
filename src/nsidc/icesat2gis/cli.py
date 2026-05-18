@@ -1,10 +1,10 @@
-"""CLI for atl08_lines"""
+"""CLI for icesat2gis"""
 
 from pathlib import Path
 
 import click
 
-from atl08_lines.read_geom import read_lines_from_atl08, read_points_from_atl08
+from nsidc.icesat2gis.read_geom import read_lines_from_atl08, read_points_from_atl08
 
 
 @click.group()  # type: ignore[untyped-decorator]

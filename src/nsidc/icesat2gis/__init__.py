@@ -1,6 +1,7 @@
 """Copyright (c) 2026 Trey Stafford. All rights reserved.
 
-atl08_lines: Code for converting ATL08 .h5 data into polylines for viewing in GIS environments
+icesat2gis: Code for converting IceSat2 (ATL08) .h5 data into GIS-compatible points
+and polylines.
 """
 
 from __future__ import annotations

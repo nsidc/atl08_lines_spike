@@ -2,9 +2,12 @@
 requires = ["uv_build>=0.7.19,<0.12"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = "nsidc.icesat2gis"
+namespace = true
 
 [project]
-name = "atl08_lines"
+name = "nsidc-icesat2gis"
 version = "0.1.0"
 authors = [
   { name = "Trey Stafford", email = "trey.stafford@colorado.edu" },
@@ -43,10 +46,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nsidc/atl08_lines_spike"
-"Bug Tracker" = "https://github.com/nsidc/atl08_lines_spike/issues"
-Discussions = "https://github.com/nsidc/atl08_lines_spike/discussions"
-Changelog = "https://github.com/nsidc/atl08_lines_spike/releases"
+Homepage = "https://github.com/nsidc/nsidc-icesat2gis"
+"Bug Tracker" = "https://github.com/nsidc/nsidc-icesat2gis/issues"
+Discussions = "https://github.com/nsidc/nsidc-icesat2gis/discussions"
+Changelog = "https://github.com/nsidc/nsidc-icesat2gis/releases"
 
 
 [dependency-groups]
@@ -73,18 +76,18 @@ log_level = "INFO"
 testpaths = [
   "tests",
 ]
-pythonpath = ["src"]
+pythonpath = ["src/nsidc"]
 
 
 [tool.coverage]
-run.source = ["atl08_lines"]
+run.source = ["icesat2gis"]
 report.exclude_also = [
   '\.\.\.',
   'if typing.TYPE_CHECKING:',
 ]
 
 [tool.mypy]
-files = ["src", "tests"]
+files = ["src/nsidc", "tests"]
 python_version = "3.11"
 warn_unused_configs = true
 strict = true
@@ -93,9 +96,14 @@ warn_unreachable = true
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
+# Needed to work with our namespaced package! See:
+# https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-paths-to-modules
+mypy_path = "$MYPY_CONFIG_FILE_DIR/src"
+explicit_package_bases = true
+
 [[tool.mypy.overrides]]
 module = [
-  "atl08_lines.*",
+  "icesat2gis.*",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
@@ -164,7 +172,7 @@ ignore = [
   "BLE001",  # Do not catch blind exception
 ]
 # Uncomment if using a _compat.typing backport
-# typing-modules = ["atl08_lines._compat.typing"]
+# typing-modules = ["icesat2gis._compat.typing"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
