@@ -36,6 +36,7 @@ dependencies = [
     "h5netcdf>=1.8.1",
     "h5py>=3.16.0",
     "numpy>=2.2.6",
+    "pyarrow>=24.0.0",
     "pyproj>=3.7.1",
     "shapely>=2.1.2",
     "xarray>=2025.6.1",
@@ -159,6 +160,8 @@ ignore = [
   "PLR2004",  # Magic value used in comparison
   "RET504",
   "RUF015",  #  Prefer `next(iter(line.coords))` over single element slice
+  "T201",  # Remove `print`
+  "BLE001",  # Do not catch blind exception
 ]
 # Uncomment if using a _compat.typing backport
 # typing-modules = ["atl08_lines._compat.typing"]
@@ -181,4 +184,5 @@ messages_control.disable = [
   "missing-module-docstring",
   "missing-function-docstring",
   "wrong-import-position",
+  "broad-exception-caught",
 ]
