@@ -59,7 +59,7 @@ uv run pytest
 Use pytest-cov to generate coverage reports:
 
 ```bash
-uv run pytest --cov=atl08_lines
+uv run pytest --cov=icesat2gis
 ```
 
 # Building docs

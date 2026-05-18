@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import importlib.metadata
 
-import atl08_lines as m
+import icesat2gis as m
 
 
 def test_version() -> None:
-    assert importlib.metadata.version("atl08_lines") == m.__version__
+    assert importlib.metadata.version("icesat2gis") == m.__version__
