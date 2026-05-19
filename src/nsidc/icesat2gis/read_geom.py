@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal, cast, get_args
 
@@ -14,10 +15,24 @@ from nsidc.icesat2gis.exceptions import IceSatMissingDataError
 GroundTrack = Literal["gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"]
 
 
+# Default ground_track core variables for ATL08.
+ATL08_DEFAULT_GT_CORE_VARS = (
+    "canopy/h_canopy",
+    "canopy/h_canopy_uncertainty",
+    "canopy/h_median_canopy",
+    "canopy/photon_rate_can",
+    "terrain/h_te_best_fit",
+    "terrain/h_te_uncertainty",
+    "terrain/photon_rate_te",
+    "terrain/terrain_slope",
+)
+
+
 def _read_points_for_gt(
     *,
     ground_track: GroundTrack,
     filepath: Path,
+    variables_to_include: Sequence[str],
 ) -> gpd.GeoDataFrame:
     """Reads 100m segment points from ATL08 for the given ground track.
 
@@ -41,15 +56,12 @@ def _read_points_for_gt(
     # Extract variables
     lats = ds.latitude
     lons = ds.longitude
-    canopy_heights = ds.canopy.h_canopy
-    canopy_heights_uncertainty = ds.canopy.h_canopy_uncertainty
-    canopy_heights_median = ds.canopy.h_median_canopy
-    canopy_photon_rate = ds.canopy.photon_rate_can
-    terrain_height_best_fit = ds.terrain.h_te_best_fit
-    terrain_height_uncertainty = ds.terrain.h_te_uncertainty
-    terrain_photon_rate = ds.terrain.h_te_uncertainty
-    terrain_slope = ds.terrain.terrain_slope
     delta_time = ds.delta_time
+
+    variables = {}
+    for var_path in variables_to_include:
+        var_name = var_path.rsplit("/", maxsplit=1)[-1]
+        variables[var_name] = ds[var_path]
 
     # Construct gdf
     gdf = gpd.GeoDataFrame(
@@ -58,15 +70,8 @@ def _read_points_for_gt(
             "ground_track": [ground_track] * len(lons),
             "source_filename": [filepath.name] * len(lons),
             "delta_time": delta_time,
-            # Core variables
-            "h_canopy": canopy_heights,
-            "h_canopy_uncertainty": canopy_heights_uncertainty,
-            "h_median_canopy": canopy_heights_median,
-            "photon_rate_can": canopy_photon_rate,
-            "h_te_best_fit": terrain_height_best_fit,
-            "h_te_uncertainty": terrain_height_uncertainty,
-            "photon_rate_te": terrain_photon_rate,
-            "terrain_slope": terrain_slope,
+            # User-provided variables
+            **variables,
         },
         geometry=gpd.points_from_xy(lons, lats),
         crs="EPSG:4326",
@@ -79,12 +84,20 @@ def _read_points_for_gt(
     return gdf
 
 
-def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
+def read_points_from_atl08(
+    *,
+    filepath: Path,
+    gt_variables_to_include: Sequence[str] = ATL08_DEFAULT_GT_CORE_VARS,
+) -> gpd.GeoDataFrame:
     """Return a GeoDataFrame containing points representing ground tracks."""
     gdfs = []
     for ground_track in get_args(GroundTrack):
         try:
-            gdf = _read_points_for_gt(ground_track=ground_track, filepath=filepath)
+            gdf = _read_points_for_gt(
+                ground_track=ground_track,
+                filepath=filepath,
+                variables_to_include=gt_variables_to_include,
+            )
             gdfs.append(gdf)
         except IceSatMissingDataError:
             continue

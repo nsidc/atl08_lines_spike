@@ -9,6 +9,8 @@ from pathlib import Path
 
 import xarray as xr
 
+from nsidc.icesat2gis.read_geom import ATL08_DEFAULT_GT_CORE_VARS
+
 TEST_DIR = Path(__file__).parent / ".." / "tests"
 
 SOURCE_DATA_PATH = (
@@ -18,18 +20,6 @@ SOURCE_DATA_PATH = (
 if not SOURCE_DATA_PATH.is_file():
     msg = "Source data path does not exist."
     raise RuntimeError(msg)
-
-
-GT_VARS_TO_INCLUDE = [
-    "canopy/h_canopy",
-    "canopy/h_canopy_uncertainty",
-    "canopy/h_median_canopy",
-    "canopy/photon_rate_can",
-    "terrain/h_te_best_fit",
-    "terrain/h_te_uncertainty",
-    "terrain/photon_rate_te",
-    "terrain/terrain_slope",
-]
 
 
 if __name__ == "__main__":
@@ -76,7 +66,7 @@ if __name__ == "__main__":
         )
 
         variables = defaultdict(dict)
-        for var_path in GT_VARS_TO_INCLUDE:
+        for var_path in ATL08_DEFAULT_GT_CORE_VARS:
             group_name, var_name = var_path.split("/")
             data_var = ds[var_path]
             variables[group_name][var_name] = xr.concat(
