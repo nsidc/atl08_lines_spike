@@ -37,8 +37,7 @@ def test_lines_from_atl08_points(atl08_test_filepath):
     lines = lines_from_atl08_points(points=points)
 
     assert lines is not None
-    # One line per expected ground track
-    assert len(lines.ground_track) == 6
+    assert len(lines.ground_track) == 5
 
     assert lines.delta_time_start is not None
     assert lines.delta_time_end is not None

@@ -196,7 +196,7 @@ def lines_from_atl08_points(
     """
     geod = Geod(ellps="WGS84")
     multi_linestrings = {}
-    for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
+    for ground_track in set(points.ground_track):
         points_for_track = points[points.ground_track == ground_track].copy()
 
         # Distances between consecutive pairs in meters
