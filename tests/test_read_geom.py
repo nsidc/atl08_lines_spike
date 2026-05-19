@@ -1,9 +1,12 @@
 from pathlib import Path
 
 import pyproj
+import pytest
 
+from nsidc.icesat2gis.exceptions import IceSatMissingDataError
 from nsidc.icesat2gis.read_geom import (
     _linestring_for_isolated_point,
+    _read_points_for_gt,
     lines_from_atl08_points,
     read_points_from_atl08,
 )
@@ -18,8 +21,9 @@ def test_read_point_geoms_from_atl08():
     points = read_points_from_atl08(filepath=test_data_path)
 
     assert points is not None
-    # One line per expected ground track
-    assert len(set(points.ground_track)) == 6
+    # One line per expected ground track (one is intentionally missing in the
+    # test data - ATL08 generally has 6 ground tracks.)
+    assert len(set(points.ground_track)) == 5
 
     assert points.h_canopy is not None
 
@@ -81,3 +85,26 @@ def test__linestring_for_isolated_point():
     )
 
     assert round(distance[0]) == expected_line_len_meters
+
+
+def test__read_points_for_gt():
+    test_data_path = TEST_DATA_DIR / "test_atl08.h5"
+
+    points_gdf = _read_points_for_gt(
+        ground_track="gt1l",
+        filepath=test_data_path,
+    )
+
+    assert points_gdf is not None
+    assert len(points_gdf) > 0
+
+
+def test__read_points_for_gt_missing_raises_error():
+    test_data_path = TEST_DATA_DIR / "test_atl08.h5"
+
+    with pytest.raises(IceSatMissingDataError):
+        _read_points_for_gt(
+            # We expect gt2l ground track to be missing from the test data.
+            ground_track="gt2l",
+            filepath=test_data_path,
+        )
