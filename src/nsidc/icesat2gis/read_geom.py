@@ -15,7 +15,9 @@ GroundTrack = Literal["gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"]
 
 
 def _read_points_for_gt(
-    *, ground_track: GroundTrack, filepath: Path
+    *,
+    ground_track: GroundTrack,
+    filepath: Path,
 ) -> gpd.GeoDataFrame:
     """Reads 100m segment points from ATL08 for the given ground track.
 
